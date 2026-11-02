@@ -14,6 +14,7 @@
 | F3 | Stateless JWTs cannot be revoked before they expire | A07 Identification & Authentication Failures | Low | Mitigated (15-minute expiry); refresh/revocation planned |
 | F4 | The rate limiter uses an in-memory store, so each instance keeps its own count | A07 | Low | Accepted for single instance; needs a shared store (e.g. Redis) to scale |
 | F5 | Users are held in memory; there is no persistent database | — | Info | Out of scope for demo |
+| F6 | API deploys use a long-lived publish-profile credential (Basic auth) instead of short-lived OIDC tokens | A07 / A05 | Low | **Accepted risk**; move to OIDC planned |
 
 ## Findings in detail
 
@@ -31,6 +32,12 @@
 
 ### F3 / F4 – Token revocation and rate-limit storage
 These are design limitations accepted for a single-instance demo and are documented for future work.
+
+### F6 – Deployment credential (Accepted risk)
+- **Context:** Azure Deployment Center's password-free option (user-assigned identity with GitHub OIDC) failed with *"We couldn't verify how GitHub Actions issues OIDC tokens for this repository"*. The repository was created after 15 July 2026, so GitHub issues **immutable subject claims** (`repo:<owner>@<id>/<repo>@<id>`). Azure's automatic setup doesn't yet recognise that format, and the setting can't be turned off for this repo.
+- **Decision:** use Basic authentication. Azure stores a publish profile as the encrypted GitHub secret `AZUREAPPSERVICE_PUBLISHPROFILE_…`, which is referenced only by the deploy job.
+- **Mitigations:** the workflow runs with `permissions: contents: read`; it deploys only from `main`; the secret is never printed; the profile can be reset from the App Service's **Overview → Reset publish profile**.
+- **Planned fix:** configure the federated credential by hand on the managed identity, using the immutable subject (`repo:sajilmaharjan-26295838@266583327/a3-fullstack-demo@1442653804:ref:refs/heads/main`). Then switch the workflow to `azure/login` with OIDC and turn SCM Basic Auth off.
 
 ## Controls verified (passed)
 

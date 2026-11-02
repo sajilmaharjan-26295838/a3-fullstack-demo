@@ -1,55 +1,89 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
+# Builds, tests and deploys the Express API (server/) to Azure App Service.
+# Docs: https://github.com/Azure/webapps-deploy
 
-name: Build and deploy Node.js app to Azure Web App - fullstack-demo
+name: Deploy API to Azure Web App - fullstack-demo
 
 on:
   push:
-    branches:
-      - 'main'
+    branches: [main]
+    paths:
+      - 'server/**'
+      - '.github/workflows/main_fullstack-demo.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read #This is required for actions/checkout
-
+    defaults:
+      run:
+        working-directory: server
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22.x'
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
 
-      - name: npm install, build, and test
+      - name: Install and test
         run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+          npm ci
+          npm test
+        env:
+          DEMO_PASSWORD: ci-demo-password
 
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
+      - name: Fail on high/critical vulnerabilities
+        run: npm audit --audit-level=high
+
+      - name: Keep production dependencies only
+        run: npm ci --omit=dev
+
+      - name: Upload API package
+        uses: actions/upload-artifact@v7
         with:
-          name: node-app
-          path: .
+          name: api
+          # Only the API is deployed: no tests, client code or repo metadata.
+          path: |
+            server/package.json
+            server/package-lock.json
+            server/src
+            server/node_modules
+          include-hidden-files: false
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    
+    environment:
+      name: Production
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+      - name: Download API package
+        uses: actions/download-artifact@v7
         with:
-          name: node-app
-      
-      - name: 'Deploy to Azure Web App'
+          name: api
+
+      - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'fullstack-demo'
-          slot-name: 'Production'
+          app-name: fullstack-demo
+          slot-name: Production
           package: .
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_F43038A399764877801ED918AD371E88 }}
+
+      - name: Smoke test /api/health
+        run: |
+          url="${{ steps.deploy-to-webapp.outputs.webapp-url }}/api/health"
+          for i in $(seq 1 12); do
+            if curl -fsS "$url" | grep -q '"ok"'; then echo "Healthy: $url"; exit 0; fi
+            echo "Waiting for app to start ($i/12)..."; sleep 10
+          done
+          echo "Health check failed: $url"; exit 1
