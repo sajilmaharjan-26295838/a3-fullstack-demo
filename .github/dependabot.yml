@@ -3,9 +3,23 @@ updates:
   - package-ecosystem: npm
     directory: /server
     schedule: { interval: weekly }
+
   - package-ecosystem: npm
     directory: /client
     schedule: { interval: weekly }
+    groups:
+      # These packages must be upgraded together; separate PRs fail CI with ERESOLVE.
+      vite:
+        patterns: ["vite", "@vitejs/*"]
+      eslint:
+        patterns: ["eslint", "@eslint/*", "typescript-eslint", "eslint-plugin-*", "globals"]
+    ignore:
+      # ESLint 10 is blocked until eslint-plugin-react-hooks supports it (SECURITY_AUDIT.md, F2).
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
