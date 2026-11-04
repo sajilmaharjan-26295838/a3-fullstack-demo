@@ -12,6 +12,8 @@ A small full-stack app built as part of my 43030 Professional Learning Plan, cov
 - CI pipeline: test → lint → build → dependency audit gate, plus CodeQL scanning
 - [Security audit report](SECURITY_AUDIT.md) with findings and fixes
 
+**Portfolio:** see [PORTFOLIO.md](PORTFOLIO.md) for my 43030 Professional Learning portfolio (evidence, screenshots and certificate).
+
 ## Run locally
 ```bash
 # API
