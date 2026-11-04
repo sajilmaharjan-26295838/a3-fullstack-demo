@@ -39,6 +39,7 @@ I built, secured and deployed this full-stack web application as part of my Prof
 Credentials to use:
 Username: alice,bob,carol
 Password: fullstack-demo
+
 The same app gives each role a different view:
 
 | Viewer (read only) | Editor (read and write) | Admin (all permissions) |
