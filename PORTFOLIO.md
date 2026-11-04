@@ -36,6 +36,9 @@ I built, secured and deployed this full-stack web application as part of my Prof
 
 **Links:** [Source code](https://github.com/sajilmaharjan-26295838/a3-fullstack-demo) · [Live app](https://delightful-flower-0c93a5d00.4.azurestaticapps.net) · [API health check](https://fullstack-demo-gre0e9c7g6cjg8d0.australiaeast-01.azurewebsites.net/api/health)
 
+Credentials to use:
+Username: alice,bob,carol
+Password: fullstack-demo
 The same app gives each role a different view:
 
 | Viewer (read only) | Editor (read and write) | Admin (all permissions) |
